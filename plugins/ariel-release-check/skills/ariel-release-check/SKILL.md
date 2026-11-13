@@ -1,5 +1,5 @@
 ---
-name: release-check
+name: ariel-release-check
 description: 开源发布检查：用户要把 GitHub 仓库开源、发新版本、或者问「用户能不能自动更新」时，先判断仓库是什么（Claude/Codex 插件和 skill、网页、npm/Python 包、Mac 应用、浏览器插件、脚本），跑脚本逐项查「用户装一次能不能自动收到更新」和开源基本功（LICENSE、密钥、个人路径），给 ✅/❌ 清单，用户点头后照 ariel-broll-video 验证过的结构补齐、涨版本号、开合并申请。触发词：开源发布检查、发布前检查、能不能自动更新、用户收不到更新、发新版、bump 版本、release check、准备开源。Claude 和 Codex 通用。
 ---
 
@@ -37,8 +37,8 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 
 然后问一个问题，给按钮：**全部补上**（❌ 和 ⚠️ 里能补的都补）/ **只补 ❌**（P3 涨版本号算 ❌）/ **先不补**。用户没点之前不改任何文件。
 
-## 第 4 步：补齐（在新分支 `release-check/<年月日>` 上做）
-从**当前所在的分支**开新分支（`git switch -c release-check/<年月日>`），用户刚做的改动要带上，不要从 main 重新开。
+## 第 4 步：补齐（在新分支 `ariel-release-check/<年月日>` 上做）
+从**当前所在的分支**开新分支（`git switch -c ariel-release-check/<年月日>`），用户刚做的改动要带上，不要从 main 重新开。
 | 检查项 | 怎么补 |
 |---|---|
 | P1 没有插件市场结构 | 照 `references/plugin-layout.md` 建文件。要挪动已有的 SKILL.md 时，**先 🔴 STOP 单独问一次**（会改变文件位置）。 |

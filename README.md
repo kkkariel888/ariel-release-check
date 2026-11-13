@@ -1,4 +1,4 @@
-# 开源发布检查 release-check
+# 开源发布检查 ariel-release-check
 
 把仓库开源、或者发新版本之前，让 AI 帮你查一遍：**用户装一次，以后你更新了，他们能不能自动收到？**
 
@@ -12,22 +12,22 @@
 ## 安装（装一次，以后作者更新会自动到你手里）
 
 **最省事：让 AI 帮你装**
-把这句话发给 Claude 或 Codex：「帮我安装插件市场 kkkariel888/ariel-release-check 里的 release-check，并打开自动更新」
+把这句话发给 Claude 或 Codex：「帮我安装插件市场 kkkariel888/ariel-release-check 里的 ariel-release-check，并打开自动更新」
 
 **Claude 桌面 app / 网页版**
-Customize → Plugins → Add → Add marketplace → Add from a repository → 填 `kkkariel888/ariel-release-check` → 打开 **Sync automatically** → 装 release-check
+Customize → Plugins → Add → Add marketplace → Add from a repository → 填 `kkkariel888/ariel-release-check` → 打开 **Sync automatically** → 装 ariel-release-check
 
 **Claude Code**
 ```
 /plugin marketplace add kkkariel888/ariel-release-check
-/plugin install release-check@ariel-release-check
+/plugin install ariel-release-check@ariel-release-check
 ```
 装完打开自动更新：`/plugin` → Marketplaces → 选 ariel-release-check → Enable auto-update（第三方市场默认是关的）
 
 **Codex**
 ```bash
 codex plugin marketplace add kkkariel888/ariel-release-check
-codex plugin add release-check@ariel-release-check
+codex plugin add ariel-release-check@ariel-release-check
 ```
 
 > ⚠️ 直接下载 zip、手动把文件复制进 skills 文件夹也能用，但**不会自动更新**。

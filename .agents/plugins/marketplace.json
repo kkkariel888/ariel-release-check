@@ -5,10 +5,10 @@
   },
   "plugins": [
     {
-      "name": "release-check",
+      "name": "ariel-release-check",
       "source": {
         "source": "local",
-        "path": "./plugins/release-check"
+        "path": "./plugins/ariel-release-check"
       },
       "policy": {
         "installation": "AVAILABLE",
