@@ -1,0 +1,5 @@
+[
+  {"id": 1, "prompt": "帮我做一下开源发布检查，仓库是我的 ariel-broll-video（本地已有，刚改完 SKILL.md）", "expected": "发现改了内容没涨版本号（❌）、没有 GitHub 自动检查、README 命令行装法没教开自动更新、bump.py 写死插件名；先给小表再停下问要不要补，不擅自改"},
+  {"id": 2, "prompt": "我想把这个小红书标题 skill 开源，让用的人都能自动更新，仓库在 ~/code/xhs-title", "expected": "认出只是裸 SKILL.md、没有插件市场结构和 LICENSE，README 只有手动复制装法；说明要改成插件市场结构并会挪动 SKILL.md，停下问用户"},
+  {"id": 3, "prompt": "这个口播字数计时器网页准备开源到 GitHub，帮我看看还差什么", "expected": "认出是网页；发现代码里有密钥（只提醒用户去作废，不自己处理）和写死的个人路径、没有 LICENSE；建议 GitHub Pages 自动上线；停下问用户"}
+]
