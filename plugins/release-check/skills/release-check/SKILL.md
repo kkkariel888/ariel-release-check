@@ -67,7 +67,7 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 - **还没有 GitHub 仓库**（`git remote -v` 是空的）：在这一步多问两件事——仓库名（默认用文件夹名）、**公开 / 私有**。用户选好后 `gh repo create <用户名>/<仓库名> --public（或 --private） --source . --remote origin`，再 `git push -u origin main`。第一次发布直接推 main，不用开合并申请。合并申请的说明里写清：改了什么、版本号、合并后用户怎么收到更新。合并按钮留给用户点。
 
 ## 第 7 步：合并后验证
-用户说合并了 → 读 `https://raw.githubusercontent.com/<用户名>/<仓库>/main/plugins/<插件名>/.claude-plugin/plugin.json`，版本号等于新版本号才算发出去了。告诉用户：Claude 桌面 app 会自动同步；Claude Code / Codex 开了自动更新的，下次启动就是新版。
+用户说合并了 → 读 `https://raw.githubusercontent.com/<用户名>/<仓库>/HEAD/plugins/<插件名>/.claude-plugin/plugin.json`，版本号等于新版本号才算发出去了。告诉用户：Claude 桌面 app 会自动同步；Claude Code / Codex 开了自动更新的，下次启动就是新版。
 
 ## 出错了怎么办
 | 情况 | 怎么办 |
