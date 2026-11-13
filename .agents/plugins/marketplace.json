@@ -1,7 +1,7 @@
 {
   "name": "ariel-release-check",
   "interface": {
-    "displayName": "开源发布检查"
+    "displayName": "Ariel 开源发布检查"
   },
   "plugins": [
     {

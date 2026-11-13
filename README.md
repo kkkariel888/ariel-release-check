@@ -1,4 +1,4 @@
-# 开源发布检查 ariel-release-check
+# Ariel 开源发布检查 ariel-release-check
 
 把仓库开源、或者发新版本之前，让 AI 帮你查一遍：**用户装一次，以后你更新了，他们能不能自动收到？**
 
