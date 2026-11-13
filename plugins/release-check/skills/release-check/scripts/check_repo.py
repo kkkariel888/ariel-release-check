@@ -214,7 +214,7 @@ def check_channel(root, t):
         ok = re.search(r"deploy-pages|peaceiris/actions-gh-pages|vercel|netlify", wf) or \
             any(os.path.exists(os.path.join(root, x)) for x in ("vercel.json", "netlify.toml"))
         add("PASS" if ok else "WARN", "C1", "网页：" + ("推送后会自动上线" if ok else "没看到自动上线配置（GitHub Pages / Vercel 等）"),
-            "" if ok else "见 references/channels.md 的网页一节")
+            "" if ok else "复制 assets/pages.yml 到 .github/workflows/，见 references/channels.md 的网页一节")
     elif t == "browser-ext":
         add("INFO", "C1", "浏览器插件：上架 Chrome 应用商店后由商店自动更新；GitHub 下载安装的不会更新", "见 references/channels.md")
     elif t == "mac-app":

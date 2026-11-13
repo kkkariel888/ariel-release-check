@@ -9,7 +9,7 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 
 `<本skill>` 指这份 SKILL.md 所在的文件夹。本 skill 文件夹里有：
 - `scripts/check_repo.py`：检查脚本（只读，Python 自带库）；`scripts/update_check.py`：本 skill 自己查新版本
-- `assets/`：要补进用户仓库的现成文件——`bump.py`（一键改齐版本号）、`check_version_bump.py` + `version-check.yml`（GitHub 自动检查忘涨版本号）、`update_check.py`（skill 开工前查新版本）
+- `assets/`：要补进用户仓库的现成文件——`pages.yml`（网页推送后自动上线）、`bump.py`（一键改齐版本号）、`check_version_bump.py` + `version-check.yml`（GitHub 自动检查忘涨版本号）、`update_check.py`（skill 开工前查新版本）
 - `references/plugin-layout.md`：插件市场仓库结构和各文件模板
 - `references/readme-install.md`：README 安装段模板
 - `references/channels.md`：不是插件的仓库怎么做自动更新
@@ -49,6 +49,7 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 | P5 开工不查新版本 | 复制 `assets/update_check.py` 进 skill 的 `scripts/`，改 `REPO`、`MARKET` 两行；在 SKILL.md 开工第一步加：「`python3 <本skill>/scripts/update_check.py`：只在最后一行是 `STATUS=updated` 或 `outdated` 时跟用户说一句」。 |
 | P6 没有一键改版本号，或 bump.py 写死了插件名 | 用 `assets/bump.py` 覆盖 `tools/bump.py`（它自动找所有插件）。 |
 | P7 没有 GitHub 自动检查 | 复制 `assets/check_version_bump.py` 到 `tools/`，`assets/version-check.yml` 到 `.github/workflows/`。 |
+| C1 网页没有自动上线 | 复制 `assets/pages.yml` 到 `.github/workflows/pages.yml`；告诉用户推送后去仓库 Settings → Pages → Source 选「GitHub Actions」，网址是 `https://<用户名>.github.io/<仓库名>/`。 |
 | C1 其他类型 | 照 `references/channels.md` 改仓库里能改的；要用户本人开账号、授权的（npm、PyPI、Vercel、应用商店），列出步骤让用户自己做。 |
 | G1 没 LICENSE | 问用户用哪种，按钮：**MIT（推荐）** / **Apache-2.0** / **先不加**。版权人写用户的 GitHub 用户名和当年年份。 |
 | G3 有密钥 | **不自己处理。** 告诉用户：去对应网站作废这个密钥，再删文件里的；已经推送过的当作已泄露。 |
@@ -62,7 +63,8 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 
 ## 第 6 步：提交、推送 —— 🔴 STOP
 给用户看：改了哪些文件（每个一句话）、版本号从几到几、检查结果。问：**推送并开合并申请** / **先不推**。
-用户同意后：`git commit` → `git push -u origin <分支>` → `gh pr create`。合并申请的说明里写清：改了什么、版本号、合并后用户怎么收到更新。合并按钮留给用户点。
+用户同意后：`git commit` → `git push -u origin <分支>` → `gh pr create`。
+- **还没有 GitHub 仓库**（`git remote -v` 是空的）：在这一步多问两件事——仓库名（默认用文件夹名）、**公开 / 私有**。用户选好后 `gh repo create <用户名>/<仓库名> --public（或 --private） --source . --remote origin`，再 `git push -u origin main`。第一次发布直接推 main，不用开合并申请。合并申请的说明里写清：改了什么、版本号、合并后用户怎么收到更新。合并按钮留给用户点。
 
 ## 第 7 步：合并后验证
 用户说合并了 → 读 `https://raw.githubusercontent.com/<用户名>/<仓库>/main/plugins/<插件名>/.claude-plugin/plugin.json`，版本号等于新版本号才算发出去了。告诉用户：Claude 桌面 app 会自动同步；Claude Code / Codex 开了自动更新的，下次启动就是新版。
@@ -71,6 +73,8 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 | 情况 | 怎么办 |
 |---|---|
 | 路径不是 git 仓库 | 只跑检查（P3 会跳过），告诉用户「没有 git 记录，查不了改了没涨版本号」。要补齐就先问用户要不要 `git init`。 |
+| 没有 origin（还没上 GitHub） | 第 1 步跳过 fetch，P3 跳过并在表下说明；第 6 步按「还没有 GitHub 仓库」处理。 |
+| 密钥已经提交进 git 历史 | 先让用户作废密钥（这是唯一真正的补救）。**从没推送过**的仓库：🔴 问用户后，删掉那行再把历史清干净——只有 1～2 个提交就 `rm -rf .git` 重新 `git init` 提交一次；提交多就请用户决定要不要用 `git filter-repo`。**推送过的**：改历史也收不回，作废是唯一办法。 |
 | `git fetch` 失败（没网、没权限） | 用 `--base` 指向本地的 main 分支再跑；本地也没有就跳过 P3，并在报告里写明。 |
 | 浅克隆，P3 显示「没法比较」 | `git fetch --unshallow`，再跑。 |
 | 检查脚本报错退出 | 把报错原文告诉用户，按报错修，不要凭感觉手查代替。 |
