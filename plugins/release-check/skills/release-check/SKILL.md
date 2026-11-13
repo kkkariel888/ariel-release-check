@@ -7,7 +7,7 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 
 **说话方式**：大白话、少说话。能让用户点的就不让打字，一次只问一个问题。报告只列有问题的项，没问题的合成一句「其余 N 项都没问题」。
 
-本 skill 文件夹里有：
+`<本skill>` 指这份 SKILL.md 所在的文件夹。本 skill 文件夹里有：
 - `scripts/check_repo.py`：检查脚本（只读，Python 自带库）；`scripts/update_check.py`：本 skill 自己查新版本
 - `assets/`：要补进用户仓库的现成文件——`bump.py`（一键改齐版本号）、`check_version_bump.py` + `version-check.yml`（GitHub 自动检查忘涨版本号）、`update_check.py`（skill 开工前查新版本）
 - `references/plugin-layout.md`：插件市场仓库结构和各文件模板
@@ -20,6 +20,7 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 ## 第 1 步：拿到仓库
 - 用户给本地路径 → 直接用。给 GitHub 链接 → 先找本机有没有这个仓库（`git remote -v` 对得上），没有就 `git clone` 到用户指定的位置，没指定就问一次放哪。
 - `git status --porcelain` 有没提交的改动 → 告诉用户，问「先提交 / 先放一边（stash）/ 就这样查」。只检查不改的话可以直接查。
+- 记下用户的 GitHub 用户名（LICENSE 和安装命令要用）：先看 `git remote get-url origin` 里的用户名，没有就 `gh api user -q .login`，还没有就问一次。
 - `git fetch origin`，后面拿 `origin/main` 比较「改了内容有没有涨版本号」。默认分支不叫 main 就用 `--base origin/<默认分支>`。
 
 ## 第 2 步：跑检查
@@ -30,22 +31,29 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 
 ## 第 3 步：给用户看结果 —— 🔴 STOP
 用一张小表：项目 | 问题（大白话）| 不修会怎样。末尾一句总评（「能自动更新」/「改完这 N 处就能自动更新」/「这类仓库只能做到提醒更新」）。
-然后问一个问题，给按钮：**全部补上** / **只补 ❌** / **先不补**。用户没点之前不改任何文件。
+- ℹ️ 里跳过的检查（比如没有 origin 没法比版本号）在表下用一句话说明。
+- 要挪动 SKILL.md 位置（P1）的，在表里那一行直接写「会把 SKILL.md 挪到 plugins/<名>/skills/<名>/」。
+- 密钥只写文件名和开头 6 个字符，不贴完整内容。
+
+然后问一个问题，给按钮：**全部补上**（❌ 和 ⚠️ 里能补的都补）/ **只补 ❌**（P3 涨版本号算 ❌）/ **先不补**。用户没点之前不改任何文件。
 
 ## 第 4 步：补齐（在新分支 `release-check/<年月日>` 上做）
+从**当前所在的分支**开新分支（`git switch -c release-check/<年月日>`），用户刚做的改动要带上，不要从 main 重新开。
 | 检查项 | 怎么补 |
 |---|---|
 | P1 没有插件市场结构 | 照 `references/plugin-layout.md` 建文件。要挪动已有的 SKILL.md 时，**先 🔴 STOP 单独问一次**（会改变文件位置）。 |
 | P1 缺 Codex 两个文件 | 照 plugin-layout.md 补，version 抄 Claude 那份。 |
 | P2 版本号不一致 | `python3 tools/bump.py <Claude plugin.json 里的版本号>` 一次改齐。 |
-| P4 README | 按 `references/readme-install.md` 补缺的那几行，只加不删用户原有内容。 |
+| P3 改了内容没涨版本号 | 留到第 5 步统一 `tools/bump.py`。 |
+| P4 README | 按 `references/readme-install.md` 补缺的那几行（包括命令行装法下面那句「打开自动更新」），只加不删用户原有内容。 |
 | P5 开工不查新版本 | 复制 `assets/update_check.py` 进 skill 的 `scripts/`，改 `REPO`、`MARKET` 两行；在 SKILL.md 开工第一步加：「`python3 <本skill>/scripts/update_check.py`：只在最后一行是 `STATUS=updated` 或 `outdated` 时跟用户说一句」。 |
-| P6 没有一键改版本号 | 复制 `assets/bump.py` 到 `tools/bump.py`。 |
+| P6 没有一键改版本号，或 bump.py 写死了插件名 | 用 `assets/bump.py` 覆盖 `tools/bump.py`（它自动找所有插件）。 |
 | P7 没有 GitHub 自动检查 | 复制 `assets/check_version_bump.py` 到 `tools/`，`assets/version-check.yml` 到 `.github/workflows/`。 |
 | C1 其他类型 | 照 `references/channels.md` 改仓库里能改的；要用户本人开账号、授权的（npm、PyPI、Vercel、应用商店），列出步骤让用户自己做。 |
 | G1 没 LICENSE | 问用户用哪种，按钮：**MIT（推荐）** / **Apache-2.0** / **先不加**。版权人写用户的 GitHub 用户名和当年年份。 |
 | G3 有密钥 | **不自己处理。** 告诉用户：去对应网站作废这个密钥，再删文件里的；已经推送过的当作已泄露。 |
 | G4 个人路径 | 改成 `~` 或相对路径。 |
+| G5 没有 .gitignore | 新建，写这几行：`.DS_Store`、`.env`、`__pycache__/`、`node_modules/`。 |
 | G5 提交了 .env | `git rm --cached <文件>`，加进 `.gitignore`，并按 G3 提醒作废里面的密钥。 |
 
 ## 第 5 步：涨版本号，再查一遍
