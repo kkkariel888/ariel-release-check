@@ -165,9 +165,14 @@ def check_plugin(root, base, files):
         manual = re.search(r"\.claude/skills/|\.codex/skills/|解压后|手动复制|下载 ?zip", readme, re.I)
         if manual and not re.search(r"不会自动更新|won'?t auto-?update|no auto-?update", readme, re.I):
             add("WARN", "P4", "README 有手动复制/下载 zip 的装法，但没提醒「这样装不会自动更新」", "在那段旁边加一句提醒")
-        if not re.search(r"自动更新|auto-?update", readme, re.I):
-            add("WARN", "P4", "README 没告诉用户怎么打开自动更新（Claude Code 第三方插件市场默认不自动更新）",
-                "加一句：/plugin → Marketplaces → 选中这个市场 → Enable auto-update")
+        cc_note = True
+        for mm in re.finditer(r"/plugin install|claude plugin install|codex plugin add", readme):
+            near = readme[max(0, mm.start() - 300): mm.end() + 400]
+            if not re.search(r"Enable auto-?update|autoUpdate|打开自动更新|开启自动更新", near, re.I):
+                cc_note = False
+        if not cc_note:
+            add("WARN", "P4", "README 的 Claude Code / Codex 命令行装法旁边，没教用户打开自动更新（Claude Code 第三方插件市场默认不自动更新）",
+                "在那段下面加一句：/plugin → Marketplaces → 选中这个市场 → Enable auto-update")
 
     # P5 开工前查新版本
     allsrc = "\n".join(rd(os.path.join(root, f)) for f in files if f.endswith((".py", ".sh", ".mjs", ".js", "SKILL.md"))
@@ -180,7 +185,10 @@ def check_plugin(root, base, files):
 
     # P6 一键改版本号
     if os.path.exists(os.path.join(root, "tools/bump.py")):
-        add("PASS", "P6", "有 tools/bump.py 一键改版本号")
+        if re.search(r"plugins/[A-Za-z0-9_-]+/\.claude-plugin", rd(os.path.join(root, "tools/bump.py"))):
+            add("WARN", "P6", "tools/bump.py 里写死了某个插件名：加第二个插件或复制到别的仓库就不能直接用", "换成 assets/bump.py（自动找所有插件）")
+        else:
+            add("PASS", "P6", "有 tools/bump.py 一键改版本号")
     else:
         add("WARN", "P6", "没有一键改版本号的工具，几处版本号容易改漏", "复制 assets/bump.py 到 tools/bump.py")
 
@@ -272,6 +280,8 @@ def main():
     if base is None and git(root, "rev-parse", "--verify", "-q", "origin/main"):
         base = "origin/main"
     files = tracked(root)
+    if not base:
+        add("INFO", "P3", "没有 origin/main 可比较，跳过「改了内容有没有涨版本号」", "git fetch 后再跑，或用 --base 指定")
     types = detect(root, files)
     add("INFO", "T0", "这个仓库是：" + "、".join(types))
     for t in types:
