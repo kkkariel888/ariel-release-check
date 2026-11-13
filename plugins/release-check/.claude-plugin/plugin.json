@@ -1,0 +1,9 @@
+{
+  "name": "release-check",
+  "version": "0.1.0",
+  "description": "开源发布检查：查 GitHub 仓库能不能让用户装一次、自动更新，查 LICENSE/密钥/个人路径，缺的照验证过的结构补齐、涨版本号、开合并申请。Claude 和 Codex 通用。",
+  "author": {
+    "name": "kkkariel888"
+  },
+  "license": "MIT"
+}
