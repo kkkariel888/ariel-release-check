@@ -1,6 +1,6 @@
 ---
 name: ariel-release-check
-description: 开源发布检查：用户要把 GitHub 仓库开源、发新版本、或者问「用户能不能自动更新」时，先判断仓库是什么（Claude/Codex 插件和 skill、网页、npm/Python 包、Mac 应用、浏览器插件、脚本），跑脚本逐项查「用户装一次能不能自动收到更新」和开源基本功（LICENSE、密钥、个人路径），给 ✅/❌ 清单，用户点头后照 ariel-broll-video 验证过的结构补齐、涨版本号、开合并申请。触发词：开源发布检查、发布前检查、能不能自动更新、用户收不到更新、发新版、bump 版本、release check、准备开源。Claude 和 Codex 通用。
+description: 开源发布检查：用户要把 GitHub 仓库开源、发新版本、或者问「用户能不能自动更新」时，先判断仓库是什么（Claude/Codex 插件和 skill、网页、npm/Python 包、Mac 应用、浏览器插件、脚本），跑脚本逐项查「用户装一次能不能自动收到更新」和开源基本功（LICENSE、密钥、个人路径），给 ✅/❌ 清单，用户点头后照 ariel-broll-video 验证过的结构补齐、涨版本号、开合并申请。触发词：开源发布检查、发布前检查、能不能自动更新、用户收不到更新、发新版、bump 版本、release check、准备开源。Claude 和 Codex 通用。还查项目在作者要的每个 AI 里能不能完整用（默认 Claude 桌面 app 的 Code 页面 + Codex，作者点名的其他 AI 照官方规范补上），不只查、还改好。触发词加：适配、能不能在 XX 用、加个 agent。
 ---
 
 # 开源发布检查（Claude / Codex 通用）
@@ -8,7 +8,8 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 **说话方式**：大白话、少说话。能让用户点的就不让打字，一次只问一个问题。报告只列有问题的项，没问题的合成一句「其余 N 项都没问题」。
 
 `<本skill>` 指这份 SKILL.md 所在的文件夹。本 skill 文件夹里有：
-- `scripts/check_repo.py`：检查脚本（只读，Python 自带库）；`scripts/update_check.py`：本 skill 自己查新版本
+- `scripts/check_repo.py`：检查脚本（只读，Python 自带库）；`scripts/platform_check.py`：查在每个 AI 里装不装得上、跑不跑得起来（只读）；`scripts/platform_fix.py`：把缺的安装文件、README 装法补齐（会改文件）；`scripts/update_check.py`：本 skill 自己查新版本
+- `assets/platforms.json`：各个 AI 的安装规范表
 - `assets/`：要补进用户仓库的现成文件——`pages.yml`（网页推送后自动上线）、`bump.py`（一键改齐版本号）、`check_version_bump.py` + `version-check.yml`（GitHub 自动检查忘涨版本号）、`update_check.py`（skill 开工前查新版本）
 - `references/plugin-layout.md`：插件市场仓库结构和各文件模板
 - `references/readme-install.md`：README 安装段模板
@@ -24,15 +25,21 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 - `git fetch origin`，后面拿 `origin/main` 比较「改了内容有没有涨版本号」。默认分支不叫 main 就用 `--base origin/<默认分支>`。
 
 ## 第 2 步：跑检查
+**先定要适配哪些 AI**：默认只管 **Claude 桌面 app 的 Code 页面** 和 **Codex**。用户没提别的就不管别的；提了（比如「还要能在 Cowork 用」「再加个 XX」）就加上。仓库根目录有 `agent-platforms.json` 的，以它为准（以前定过）。
+- 规范表里有的（Claude Code 终端、Cowork 等）直接用 `--platforms` 加。
+- **规范表里没有的新 AI**：先上网找它的**官方文档**，弄清三件事：插件/skill 装在哪、清单文件叫什么放哪、怎么从 GitHub 装和自动更新。照 `assets/platforms.json` 的格式写一条，放进仓库根目录 `agent-platforms.json` 的 `custom`（格式和 Claude 一样就用 `make: "copy:<Claude 那份的路径>"`）。官方文档找不到就老实告诉用户，不要猜。
+
 `python3 <本skill>/scripts/check_repo.py <仓库> [--base origin/main] [--prefix ariel-]`
 
 作者要求所有 skill 用统一前缀（打 `/前缀` 就能调出来，比如 kkkariel888 的仓库都要 `ariel-`）就加 `--prefix`，不确定就问一句。
 
-每行一项：✅ 通过、❌ 必须修（不修用户收不到更新或有法律/安全问题）、⚠️ 建议修、ℹ️ 说明。最后一行 `STATUS=PASS / WARN / FAIL`。
+然后跑平台体检：`python3 <本skill>/scripts/platform_check.py <仓库> [--platforms claude-desktop,codex,...]`（不填就按 agent-platforms.json，没有就按默认）。它按每个 AI 列：装得上吗（安装文件齐不齐）、跑得起来吗（只认 Mac 的命令、显卡、第三方依赖、被拦的下载源、写桌面、打开网页）、README 写没写这个 AI 怎么装。
+
+check_repo 每行一项：✅ 通过、❌ 必须修（不修用户收不到更新或有法律/安全问题）、⚠️ 建议修、ℹ️ 说明。最后一行 `STATUS=PASS / WARN / FAIL`。
 检查项编号：T0 仓库类型；P1–P8 插件自动更新（市场清单、版本号一致、改了没涨、README 装法、开工查新版、一键改版本号、GitHub 自动检查、skill 名字前缀）；C1 其他类型的发货渠道；G1–G5 开源基本功（LICENSE、README、密钥、个人路径、.env）。
 
 ## 第 3 步：给用户看结果 —— 🔴 STOP
-用一张小表：项目 | 问题（大白话）| 不修会怎样。末尾一句总评（「能自动更新」/「改完这 N 处就能自动更新」/「这类仓库只能做到提醒更新」）。
+用一张小表：项目 | 问题（大白话）| 不修会怎样。再加一张「在哪能用」小表：每个要适配的 AI 一行，✅ 能用 / ❌ 卡在哪（大白话），没真跑过的标「没实测」。末尾一句总评（「能自动更新」/「改完这 N 处就能自动更新」/「这类仓库只能做到提醒更新」）。
 - ℹ️ 里跳过的检查（比如没有 origin 没法比版本号）在表下用一句话说明。
 - 要挪动 SKILL.md 位置（P1）的，在表里那一行直接写「会把 SKILL.md 挪到 plugins/<名>/skills/<名>/」。
 - 密钥只写文件名和开头 6 个字符，不贴完整内容。
@@ -44,7 +51,12 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 | 检查项 | 怎么补 |
 |---|---|
 | P1 没有插件市场结构 | 照 `references/plugin-layout.md` 建文件。要挪动已有的 SKILL.md 时，**先 🔴 STOP 单独问一次**（会改变文件位置）。 |
-| P1 缺 Codex 两个文件 | 照 plugin-layout.md 补，version 抄 Claude 那份。 |
+| P1 缺 Codex 两个文件 | `platform_fix.py` 会补，见下一行。 |
+| 平台体检：某个 AI 装不上 / README 没写怎么装 | `python3 <本skill>/scripts/platform_fix.py <仓库> [--platforms ...] [--add 新AI]`：自动补安装文件、README 装法，把要适配的 AI 记进 `agent-platforms.json`，`tools/bump.py` 换成能改齐所有 AI 版本号的新版。输出有 ❗ 的照那个 AI 的官方文档手写。 |
+| 平台体检：只认 Mac 的命令 | 加别的系统怎么办：`shutil.which` 判断，没有就换 Linux / Windows 的办法，或者写清「这一步只能在 Mac 上做」并给退路。 |
+| 平台体检：第三方依赖没自动装 | 脚本开头自己装：`pip install --target <缓存目录>`（装不上再加 `--break-system-packages`），或者换成 Python 自带库能做的写法。 |
+| 平台体检：下载源被拦 / 没写网络被拦怎么办 | 换成 GitHub、PyPI 这类沙盒能上的源；SKILL.md 的出错表加一行：被拦时告诉用户放开哪几个网址，好了说「重试」。 |
+| 平台体检：写桌面 / 打开网页 | 写不了桌面就放回用户给的文件夹；「在哪打开」那一节每个要适配的 AI 各写一句怎么打开（Code 页面用侧边浏览器、Codex 用 in-app 浏览器、Cowork 在对话里确认）。 |
 | P2 版本号不一致 | `python3 tools/bump.py <Claude plugin.json 里的版本号>` 一次改齐。 |
 | P3 改了内容没涨版本号 | 留到第 5 步统一 `tools/bump.py`。 |
 | P4 README | 按 `references/readme-install.md` 补缺的那几行（包括命令行装法下面那句「打开自动更新」），只加不删用户原有内容。 |
@@ -62,10 +74,11 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 
 ## 第 5 步：涨版本号，再查一遍
 - 这个分支相比 `origin/main` 改了插件内容（SKILL.md、scripts、assets、references）→ `python3 tools/bump.py`（最后一位 +1；用户说了大版本就按用户说的）。只改了 README、tools/、.github/ 不用涨。
-- 再跑一次第 2 步。**还有 ❌ 不进下一步**，回第 4 步。
+- 再跑一次第 2 步（check_repo 和 platform_check 都跑）。**还有 ❌ 不进下一步**，回第 4 步。
+- **真跑一次**（静态体检只查得出写法问题）：Code 页面就是本机，挑一个最典型的任务从头到尾跑一遍；本机有 `codex` 命令的，把仓库复制到临时文件夹，`codex exec -C <临时文件夹> "读 <SKILL.md 路径>，照着把第 0、1 步做完，报告卡在哪"` 看它能不能走通；其他 AI 跑不了的，在报告里写「没实测」，**不要说『全都能用』**。
 
 ## 第 6 步：提交、推送 —— 🔴 STOP
-给用户看：改了哪些文件（每个一句话）、版本号从几到几、检查结果。问：**推送并开合并申请** / **先不推**。
+给用户看：改了哪些文件（每个一句话）、版本号从几到几、检查结果、「在哪能用」小表。问：**推送并开合并申请** / **先不推**。
 用户同意后：`git commit` → `git push -u origin <分支>` → `gh pr create`。
 - **还没有 GitHub 仓库**（`git remote -v` 是空的）：在这一步多问两件事——仓库名（默认用文件夹名）、**公开 / 私有**。用户选好后 `gh repo create <用户名>/<仓库名> --public（或 --private） --source . --remote origin`，再 `git push -u origin main`。第一次发布直接推 main，不用开合并申请。合并申请的说明里写清：改了什么、版本号、合并后用户怎么收到更新。合并按钮留给用户点。
 
