@@ -15,7 +15,7 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 - `references/channels.md`：不是插件的仓库怎么做自动更新
 
 ## 第 0 步：开工前
-`python3 <本skill>/scripts/update_check.py`：查本 skill 有没有新版本。只在最后一行是 `STATUS=updated` 或 `outdated` 时跟用户说一句，其他情况不吭声。
+`python3 <本skill>/scripts/update_check.py`：开工查新版本（几秒）。最后一行是 `STATUS=live` → 跟用户说一句「用上了新版 X」，然后读它打印的 `LIVE_SKILL_DIR` 文件夹里的 `SKILL.md`，**这次就按新版做**（从新版第 0 步的下一条接着做，之后 `<本skill>` 都指那个文件夹）；是 `updated` 或 `outdated` 就说一句；其他情况不吭声。
 
 ## 第 1 步：拿到仓库
 - 用户给本地路径 → 直接用。给 GitHub 链接 → 先找本机有没有这个仓库（`git remote -v` 对得上），没有就 `git clone` 到用户指定的位置，没指定就问一次放哪。
@@ -46,7 +46,7 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 | P2 版本号不一致 | `python3 tools/bump.py <Claude plugin.json 里的版本号>` 一次改齐。 |
 | P3 改了内容没涨版本号 | 留到第 5 步统一 `tools/bump.py`。 |
 | P4 README | 按 `references/readme-install.md` 补缺的那几行（包括命令行装法下面那句「打开自动更新」），只加不删用户原有内容。 |
-| P5 开工不查新版本 | 复制 `assets/update_check.py` 进 skill 的 `scripts/`，改 `REPO`、`MARKET` 两行；在 SKILL.md 开工第一步加：「`python3 <本skill>/scripts/update_check.py`：只在最后一行是 `STATUS=updated` 或 `outdated` 时跟用户说一句」。 |
+| P5 开工不查新版本，或查到新版这次还用旧版 | 复制（已有旧的就换掉）`assets/update_check.py` 进 skill 的 `scripts/`，改 `REPO`、`MARKET` 两行；SKILL.md 开工第一步写（已有旧写法就换掉）：「`python3 <本skill>/scripts/update_check.py`：开工查新版本（几秒）。最后一行是 `STATUS=live` → 跟用户说一句「用上了新版 X」，然后读它打印的 `LIVE_SKILL_DIR` 文件夹里的 `SKILL.md`，**这次就按新版做**（从新版第 0 步的下一条接着做，之后 `<本skill>` 都指那个文件夹）；是 `updated` 或 `outdated` 就说一句；其他情况不吭声。」 |
 | P6 没有一键改版本号，或 bump.py 写死了插件名 | 用 `assets/bump.py` 覆盖 `tools/bump.py`（它自动找所有插件）。 |
 | P7 没有 GitHub 自动检查 | 复制 `assets/check_version_bump.py` 到 `tools/`，`assets/version-check.yml` 到 `.github/workflows/`。 |
 | C1 网页没有自动上线 | 复制 `assets/pages.yml` 到 `.github/workflows/pages.yml`；告诉用户推送后去仓库 Settings → Pages → Source 选「GitHub Actions」，网址是 `https://<用户名>.github.io/<仓库名>/`。 |
@@ -73,6 +73,7 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 | 情况 | 怎么办 |
 |---|---|
 | 路径不是 git 仓库 | 只跑检查（P3 会跳过），告诉用户「没有 git 记录，查不了改了没涨版本号」。要补齐就先问用户要不要 `git init`。 |
+| 连不上 GitHub（Cowork / Codex 沙盒拦了网络） | 查版本号、推送、合并都要联网。告诉用户放开 github.com、api.github.com、raw.githubusercontent.com（Codex 里批准联网），好了说「重试」；本地检查照常做完、先给清单。 |
 | 没有 origin（还没上 GitHub） | 第 1 步跳过 fetch，P3 跳过并在表下说明；第 6 步按「还没有 GitHub 仓库」处理。 |
 | 密钥已经提交进 git 历史 | 先让用户作废密钥（这是唯一真正的补救）。**从没推送过**的仓库：🔴 问用户后，删掉那行再把历史清干净——只有 1～2 个提交就 `rm -rf .git` 重新 `git init` 提交一次；提交多就请用户决定要不要用 `git filter-repo`。**推送过的**：改历史也收不回，作废是唯一办法。 |
 | `git fetch` 失败（没网、没权限） | 用 `--base` 指向本地的 main 分支再跑；本地也没有就跳过 P3，并在报告里写明。 |
