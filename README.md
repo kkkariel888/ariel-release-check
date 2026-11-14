@@ -14,7 +14,7 @@
 **最省事：让 AI 帮你装**
 把这句话发给 Claude 或 Codex：「帮我安装插件市场 kkkariel888/ariel-release-check 里的 ariel-release-check，并打开自动更新」
 
-**Claude 桌面 app / 网页版**
+**Claude 桌面 app（Code 页面和 Cowork 都能用）/ 网页版**
 Customize → Plugins → Add → Add marketplace → Add from a repository → 填 `kkkariel888/ariel-release-check` → 打开 **Sync automatically** → 装 ariel-release-check
 
 **Claude Code**
