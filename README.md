@@ -6,6 +6,7 @@
 - 逐项打 ✅ / ❌：插件市场结构、版本号、改了内容有没有涨版本号、README 装法、开源基本功（LICENSE、密钥、个人路径）
 - 你点头后照 [ariel-broll-video](https://github.com/kkkariel888/ariel-broll-video) 验证过的结构补齐，涨版本号，开合并申请
 - 顺手给仓库装上「忘涨版本号就拦下合并」的 GitHub 自动检查
+- **查项目在哪些 AI 里能完整用，不能用的改好**：默认查 Claude 桌面 app 的 Code 页面和 Codex；你说「还要能在 Cowork 用」或「再加个 XX」，它就照那个 AI 的官方规范把安装文件、说明、不兼容的地方补好，最后给你一张「在哪能用」的表（没真跑过的会老实写「没实测」）
 
 装好后在对话框打 **`/ariel`** 就能找到它（`ariel-release-check`），或者直接对 AI 说：「帮我做一下开源发布检查，仓库是 ……」
 

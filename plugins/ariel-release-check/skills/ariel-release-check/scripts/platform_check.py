@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+# platform-check: skip-file（本文件里的规则字样不算命中）
+"""平台适配体检（只看不改，只用 Python 自带库）：查项目在作者要的每个 AI 里「装得上、跑得起来、卡住时知道怎么办」。
+
+用法：python3 platform_check.py <仓库根目录> [--platforms claude-desktop,codex,...]
+要查哪些 AI：--platforms > 仓库根目录 agent-platforms.json 的 targets > 默认（Claude 桌面 app 的 Code 页面 + Codex）。
+各 AI 的规范在 ../assets/platforms.json；仓库自己加的新 AI 写在 agent-platforms.json 的 custom 里。
+缺的安装文件、README 说明可以用 platform_fix.py 自动补；代码层面的问题看输出的说明手动改。
+最后一行：STATUS=PASS / WARN / FAIL（有 ❌ 退出码 1）
+"""
+import argparse, ast, os, re, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from platforms_lib import lj, plugin_dirs, targets  # noqa: E402
+
+MAC_ONLY = r'\b(brew install|textutil|osascript|pbcopy|pbpaste|sips|afplay|mdfind|defaults write)\b|/Applications/|\bopen -a\b'
+FALLBACK = r'platform\.system|sys\.platform|shutil\.which|Linux|apt-get|Windows|其他系统|没有 brew|不是 Mac'
+GPU = r'\b(cuda|mps|coreml|metal|-ngl|n_gpu_layers|torch\.device)\b'
+NET_HELP = r'网络|联网|放开|白名单|allowlist|network|离线|offline|连不上'
+SKIP_DIRS = {'.git', 'node_modules', '__pycache__', '.venv', 'venv'}
+
+rows = []   # (平台, 级别, 项目, 说明)
+
+
+def add(plat, lvl, item, msg):
+    rows.append((plat, lvl, item, msg))
+
+
+def read(p):
+    try:
+        return open(p, encoding='utf-8', errors='ignore').read()
+    except Exception:
+        return ''
+
+
+def find_skills(root):
+    out = []
+    for d, ds, fs in os.walk(root):
+        ds[:] = [x for x in ds if x not in SKIP_DIRS]
+        if 'SKILL.md' in fs:
+            out.append(d)
+    return out
+
+
+def code_files(skill):
+    for d, ds, fs in os.walk(skill):
+        ds[:] = [x for x in ds if x not in SKIP_DIRS]
+        for f in fs:
+            if f.endswith(('.py', '.sh', '.mjs', '.js', '.ts')):
+                yield os.path.join(d, f)
+
+
+def third_party_py(path, local):
+    try:
+        tree = ast.parse(read(path))
+    except Exception:
+        return []
+    std = set(getattr(sys, 'stdlib_module_names', ())) | {'__future__'}
+    mods = []
+    for n in ast.walk(tree):
+        names = [a.name for a in n.names] if isinstance(n, ast.Import) else [n.module] if isinstance(n, ast.ImportFrom) and n.level == 0 and n.module else []
+        for m in names:
+            r = m.split('.')[0]
+            if r not in std and r not in local:
+                mods.append(r)
+    return sorted(set(mods))
+
+
+def check_install(root, p, spec, plugins):
+    name = spec.get('name', p)
+    bad = []
+    for it in spec.get('install', []):
+        if it.get('scope') == 'root':
+            f = os.path.join(root, it['file'])
+            if lj(f) is None:
+                bad.append(it['file'])
+        else:
+            for pn, pd in plugins:
+                f = os.path.join(pd, it['file'])
+                d = lj(f)
+                if d is None:
+                    bad.append(os.path.relpath(f, root))
+                elif not d.get('name'):
+                    bad.append(os.path.relpath(f, root) + '（没写 name）')
+    if not spec.get('install'):
+        add(p, '⚠️', '安装', f'规范表里没写 {name} 怎么装，先照它的官方文档补上 install')
+    elif bad:
+        add(p, '❌', '安装', f'{name} 装不上，缺：{"、".join(bad[:4])}（platform_fix.py 能自动补）')
+    else:
+        add(p, '✅', '安装', f'{name} 的安装文件齐全')
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('root'); ap.add_argument('--platforms', default=None)
+    a = ap.parse_args()
+    root = os.path.abspath(os.path.expanduser(a.root))
+    plats, reg, src = targets(root, a.platforms)
+    unknown = [p for p in plats if p not in reg]
+    if unknown:
+        print(f'规范表里没有：{unknown}。先读它的官方文档，把安装规范写进 assets/platforms.json 或仓库的 agent-platforms.json 的 custom。')
+        print('STATUS=FAIL'); sys.exit(1)
+    print(f'要适配的 AI（{src}）：' + '、'.join(reg[p]['name'] for p in plats))
+    readme = read(os.path.join(root, 'README.md'))
+    plugins = plugin_dirs(root)
+
+    # 1. 装得上吗
+    for p in plats:
+        check_install(root, p, reg[p], plugins)
+        if readme and reg[p].get('mention') and not re.search(reg[p]['mention'], readme):
+            add(p, '⚠️', 'README', f'README 没写在 {reg[p]["name"]} 里怎么装（platform_fix.py 能自动补）')
+
+    skills = find_skills(root)
+    if not skills:
+        print('没找到 SKILL.md'); print('STATUS=FAIL'); sys.exit(1)
+    # 2. 跑得起来吗
+    for sk in skills:
+        name = os.path.basename(sk)
+        md = read(os.path.join(sk, 'SKILL.md'))
+        local = {os.path.splitext(f)[0] for f in os.listdir(os.path.join(sk, 'scripts'))} if os.path.isdir(os.path.join(sk, 'scripts')) else set()
+        texts = [(os.path.join(sk, 'SKILL.md'), md)] + [(f, t) for f in code_files(sk) if 'platform-check: skip-file' not in (t := read(f))]
+        domains, gpu_hits, mac_hits, deps, py2 = {}, [], [], [], []
+        for f, t in texts:
+            rel = os.path.relpath(f, root)
+            lines = t.splitlines()
+            for i, line in enumerate(lines):
+                if re.search(MAC_ONLY, line):
+                    ctx = '\n'.join(lines[max(0, i - 8): i + 3])
+                    if not re.search(FALLBACK, ctx):
+                        mac_hits.append(f'{rel}:{i + 1}')
+                if re.search(GPU, line, re.I) and 'disable-gpu' not in line:
+                    gpu_hits.append(f'{rel}:{i + 1}')
+                for d in re.findall(r'https?://([A-Za-z0-9.-]+\.[A-Za-z]{2,})', line):
+                    if d not in ('127.0.0.1', 'localhost') and not d.endswith('.example.com'):
+                        domains.setdefault(d, rel)
+            if f.endswith('.py'):
+                mods = third_party_py(f, local)
+                if mods and not re.search(r'pip.{0,40}install|--target', t):
+                    deps.append(f'{rel} 要 {",".join(mods)}')
+        for m in re.finditer(r'`[^`]*\bpython (?!3)[^`]*`', md):
+            py2.append(m.group(0)[:50])
+
+        for p in plats:
+            s = reg[p]; pn = s['name']; sb = bool(s.get('sandbox'))
+            if mac_hits:
+                add(p, '❌' if sb else '⚠️', f'{name} 只认 Mac', f'{len(mac_hits)} 处只在 Mac 能用、没写别的系统怎么办：{"、".join(mac_hits[:4])}')
+            if gpu_hits and sb:
+                add(p, '⚠️', f'{name} 显卡', f'用到显卡加速（{"、".join(gpu_hits[:3])}），沙盒里没有显卡，要有 CPU 退路')
+            if deps:
+                add(p, '❌', f'{name} 依赖', '用到第三方包但没有自动安装：' + '；'.join(deps[:3]))
+            if py2:
+                add(p, '⚠️', f'{name} python', f'命令写的是 python 不是 python3，有的电脑上没有：{py2[0]}')
+            for d, rel in domains.items():
+                if d in (s.get('blocked') or []):
+                    add(p, '❌', f'{name} 网络', f'{rel} 要访问 {d}，{pn} 实测会拦，换个下载源')
+            if sb and domains and not re.search(NET_HELP, md):
+                add(p, '⚠️', f'{name} 网络', f'要上网（{"、".join(list(domains)[:4])}），SKILL.md 没写网络被拦时怎么跟用户说')
+            desk = [l for l in md.splitlines() if re.search(r'~/Desktop|桌面上|到用户桌面|另存.{0,6}桌面|存.{0,4}到桌面', l)]
+            if sb and any(not re.search(r'沙盒|Cowork|Codex|写不了|不能写|能写桌面就', l) for l in desk):
+                add(p, '⚠️', f'{name} 文件位置', f'{pn} 只能碰用户给的文件夹，写到桌面会失败，要有退路（放回用户文件夹）')
+            if s.get('mention') and re.search(r'(打开|open|点开).{0,12}(页面|网页|浏览器|地址|page)|侧边浏览器|in-app browser|内置浏览器', md, re.I):
+                secs = re.findall(r'^#+ [^\n]*(?:打开|浏览器|browser|Browser)[^\n]*\n(.*?)(?=^#+ |\Z)', md, re.M | re.S)
+                where = '\n'.join(secs) or md
+                if not re.search(s['mention'], where):
+                    add(p, '⚠️', f'{name} 交互', f'要打开页面让用户点，{"「在哪打开」那一节" if secs else "SKILL.md"}没写在 {pn} 里怎么打开')
+
+    for p in plats:
+        mine = [r for r in rows if r[0] == p]
+        worst = '❌' if any(r[1] == '❌' for r in mine) else '⚠️' if any(r[1] == '⚠️' for r in mine) else '✅'
+        print(f'\n## {worst} {reg[p]["name"]}')
+        for _, lvl, item, msg in mine:
+            print(f'{lvl} {item}：{msg}')
+    fail = any(r[1] == '❌' for r in rows); warn = any(r[1] == '⚠️' for r in rows)
+    print('\n静态体检只查得出写法问题；功能能不能从头跑到尾，要在该 AI 里真跑一次才算数。')
+    print('STATUS=' + ('FAIL' if fail else 'WARN' if warn else 'PASS'))
+    sys.exit(1 if fail else 0)
+
+
+if __name__ == '__main__':
+    main()
