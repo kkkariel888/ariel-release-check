@@ -24,10 +24,12 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 - `git fetch origin`，后面拿 `origin/main` 比较「改了内容有没有涨版本号」。默认分支不叫 main 就用 `--base origin/<默认分支>`。
 
 ## 第 2 步：跑检查
-`python3 <本skill>/scripts/check_repo.py <仓库> [--base origin/main]`
+`python3 <本skill>/scripts/check_repo.py <仓库> [--base origin/main] [--prefix ariel-]`
+
+作者要求所有 skill 用统一前缀（打 `/前缀` 就能调出来，比如 kkkariel888 的仓库都要 `ariel-`）就加 `--prefix`，不确定就问一句。
 
 每行一项：✅ 通过、❌ 必须修（不修用户收不到更新或有法律/安全问题）、⚠️ 建议修、ℹ️ 说明。最后一行 `STATUS=PASS / WARN / FAIL`。
-检查项编号：T0 仓库类型；P1–P7 插件自动更新（市场清单、版本号一致、改了没涨、README 装法、开工查新版、一键改版本号、GitHub 自动检查）；C1 其他类型的发货渠道；G1–G5 开源基本功（LICENSE、README、密钥、个人路径、.env）。
+检查项编号：T0 仓库类型；P1–P8 插件自动更新（市场清单、版本号一致、改了没涨、README 装法、开工查新版、一键改版本号、GitHub 自动检查、skill 名字前缀）；C1 其他类型的发货渠道；G1–G5 开源基本功（LICENSE、README、密钥、个人路径、.env）。
 
 ## 第 3 步：给用户看结果 —— 🔴 STOP
 用一张小表：项目 | 问题（大白话）| 不修会怎样。末尾一句总评（「能自动更新」/「改完这 N 处就能自动更新」/「这类仓库只能做到提醒更新」）。
@@ -48,6 +50,7 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 | P4 README | 按 `references/readme-install.md` 补缺的那几行（包括命令行装法下面那句「打开自动更新」），只加不删用户原有内容。 |
 | P5 开工不查新版本，或查到新版这次还用旧版 | 复制（已有旧的就换掉）`assets/update_check.py` 进 skill 的 `scripts/`，改 `REPO`、`MARKET` 两行；SKILL.md 开工第一步写（已有旧写法就换掉）：「`python3 <本skill>/scripts/update_check.py`：开工查新版本（几秒）。最后一行是 `STATUS=live` → 跟用户说一句「用上了新版 X」，然后读它打印的 `LIVE_SKILL_DIR` 文件夹里的 `SKILL.md`，**这次就按新版做**（从新版第 0 步的下一条接着做，之后 `<本skill>` 都指那个文件夹）；是 `updated` 或 `outdated` 就说一句；其他情况不吭声。」 |
 | P6 没有一键改版本号，或 bump.py 写死了插件名 | 用 `assets/bump.py` 覆盖 `tools/bump.py`（它自动找所有插件）。 |
+| P8 名字没用统一前缀 | `git mv` skill 文件夹改成 `前缀-名字`，SKILL.md 的 `name:` 改成一样；**插件名不改**（老用户靠插件名收更新），README 写一句「打 `/前缀` 就能找到」。改名后旧版 update_check 这一次找不到新文件夹、先用旧版，新 update_check 会自己找。 |
 | P7 没有 GitHub 自动检查 | 复制 `assets/check_version_bump.py` 到 `tools/`，`assets/version-check.yml` 到 `.github/workflows/`。 |
 | C1 网页没有自动上线 | 复制 `assets/pages.yml` 到 `.github/workflows/pages.yml`；告诉用户推送后去仓库 Settings → Pages → Source 选「GitHub Actions」，网址是 `https://<用户名>.github.io/<仓库名>/`。 |
 | C1 其他类型 | 照 `references/channels.md` 改仓库里能改的；要用户本人开账号、授权的（npm、PyPI、Vercel、应用商店），列出步骤让用户自己做。 |

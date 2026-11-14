@@ -7,7 +7,7 @@
 - 你点头后照 [ariel-broll-video](https://github.com/kkkariel888/ariel-broll-video) 验证过的结构补齐，涨版本号，开合并申请
 - 顺手给仓库装上「忘涨版本号就拦下合并」的 GitHub 自动检查
 
-装好后对 AI 说：「帮我做一下开源发布检查，仓库是 ……」
+装好后在对话框打 **`/ariel`** 就能找到它（`ariel-release-check`），或者直接对 AI 说：「帮我做一下开源发布检查，仓库是 ……」
 
 ## 安装（装一次，以后作者更新会自动到你手里）
 
