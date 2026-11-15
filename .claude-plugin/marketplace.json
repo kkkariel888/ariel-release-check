@@ -1,7 +1,7 @@
 {
   "name": "ariel-release-check",
   "owner": {
-    "name": "kkkariel888"
+    "name": "nini818726"
   },
   "metadata": {
     "description": "Ariel 开源发布检查：装一次，作者更新自动到你手里（Claude / Codex 通用）"
@@ -11,7 +11,7 @@
       "name": "ariel-release-check",
       "source": "./plugins/ariel-release-check",
       "description": "开源发布检查：查 GitHub 仓库能不能让用户装一次、自动更新，查 LICENSE/密钥/个人路径，缺的照验证过的结构补齐、涨版本号、开合并申请；还查项目在你要的每个 AI 里能不能完整用，不能用的改好。Claude 和 Codex 通用。",
-      "version": "0.2.2"
+      "version": "0.2.3"
     }
   ]
 }
