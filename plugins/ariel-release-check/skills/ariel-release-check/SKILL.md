@@ -31,7 +31,7 @@ description: 开源发布检查：用户要把 GitHub 仓库开源、发新版�
 
 `python3 <本skill>/scripts/check_repo.py <仓库> [--base origin/main] [--prefix ariel-]`
 
-作者要求所有 skill 用统一前缀（打 `/前缀` 就能调出来，比如 kkkariel888 的仓库都要 `ariel-`）就加 `--prefix`，不确定就问一句。
+作者要求所有 skill 用统一前缀（打 `/前缀` 就能调出来，比如 nini818726 的仓库都要 `ariel-`）就加 `--prefix`，不确定就问一句。
 
 然后跑平台体检：`python3 <本skill>/scripts/platform_check.py <仓库> [--platforms claude-desktop,codex,...]`（不填就按 agent-platforms.json，没有就按默认）。它按每个 AI 列：装得上吗（安装文件齐不齐）、跑得起来吗（只认 Mac 的命令、显卡、第三方依赖、被拦的下载源、写桌面、打开网页）、README 写没写这个 AI 怎么装。
 
